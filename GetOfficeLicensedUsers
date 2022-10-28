@@ -1,0 +1,93 @@
+#Connecting to Office 365 tenant and pulling data on users assigned Office 365, Visio, and Project
+Connect-MsolService
+$project = Get-MsolUser | where {($_.licenses).AccountSkuId -match "PROJECTPROFESSIONAL"} | select displayname,userprincipalname,islicensed
+$visio = Get-MsolUser | where {($_.licenses).AccountSkuId -match "VISIOCLIENT"} | select displayname,userprincipalname,islicensed
+$office_suite = Get-MsolUser | where {($_.licenses).AccountSkuId -match "ENTERPRISEPACK"} | select displayname,userprincipalname,islicensed
+
+#creating Excel file and opening workbook and adding 2 worksheets
+$license_Report = New-Object -ComObject excel.application
+$license_Report.visible = $true
+$license_workbook = $license_Report.workbooks.add()
+$license_workbook.worksheets.add()
+$license_workbook.worksheets.add()
+
+#assigns variables to each worksheet and gives each sheet a name
+$project_sheet = $license_workbook.worksheets.item(1)
+$visio_sheet = $license_workbook.worksheets.item(2)
+$office_sheet = $license_workbook.worksheets.item(3)
+$project_sheet.name = "Microsoft Project"
+$visio_sheet.name = "Microsoft Visio"
+$office_sheet.name = "Office 365 Suite"
+
+<#
+adding in titles for each column used for all sheets
+#>
+$project_sheet.cells.item(1,1) = 'Project Licensed Users'
+$project_sheet.cells.item(2,1) = 'Name'
+$project_sheet.cells.item(2,2) = 'Email Address'
+$project_sheet.cells.item(2,3) = 'isLicensed'
+
+
+$visio_sheet.cells.item(1,1) = 'Visio Licensed Users'
+$visio_sheet.cells.item(2,1) = 'Name'
+$visio_sheet.cells.item(2,2) = 'Email Address'
+$visio_sheet.cells.item(2,3) = 'isLicensed'
+
+
+$office_sheet.cells.item(1,1) = 'Office 365 Suite Licensed Users'
+$office_sheet.cells.item(2,1) = 'Name'
+$office_sheet.cells.item(2,2) = 'Email Address'
+$office_sheet.cells.item(2,3) = 'isLicensed'
+
+
+#counter to start entering entries of data in the excel sheet. 3 row
+$namecell = 3
+
+<#
+loops through each entry from the Microsoft Project cmdlet and enters in the licensed 
+Project's DisplayName, UserPrincipalName, and boolean stating they are licensed
+#>
+foreach($projects in $project){
+   $project_sheet.cells.item($namecell,1) = $projects.DisplayName
+   $project_sheet.cells.item($namecell,2) = $projects.UserPrincipalName
+   $project_sheet.cells.item($namecell,3) = $projects.IsLicensed
+   $namecell += 1
+}
+
+<#
+loops through each entry from the Microsoft Visio cmdlet and enters in the licensed 
+Visio's DisplayName, UserPrincipalName, and boolean stating they are licensed
+#>
+$namecell = 3
+foreach($visios in $visio){
+   $visio_sheet.cells.item($namecell,1) = $visios.DisplayName
+   $visio_sheet.cells.item($namecell,2) = $visios.UserPrincipalName
+   $visio_sheet.cells.item($namecell,3) = $visios.IsLicensed
+   $namecell += 1
+}
+
+
+<#
+loops through each entry from the Microsoft Office cmdlet and enters in the licensed 
+Office's DisplayName, UserPrincipalName, and boolean stating they are licensed
+#>
+$namecell = 3
+foreach($office_suites in $office_suite){
+   $office_sheet.cells.item($namecell,1) = $office_suites.DisplayName
+   $office_sheet.cells.item($namecell,2) = $office_suites.UserPrincipalName
+   $office_sheet.cells.item($namecell,3) = $office_suites.IsLicensed
+   $namecell += 1
+}
+
+#automatically sizes columns in each sheet
+$project_sheet.columns.AutoFit()
+$visio_sheet.columns.AutoFit()
+$office_sheet.columns.AutoFit()
+
+#file path specifying saving workbook in .xlsx format
+$my_OLR = '<insert file path here>'
+
+#saves Workbook in the file path specified
+$license_Report.displayalerts = $false
+$license_workbook.saveas($my_OLR)
+$license_Report.displayalerts = $true
